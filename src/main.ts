@@ -328,10 +328,60 @@ class JsonParser {
     }
 }
 
-const toJson = (str: string) => {
+const stringToJson = (str: string) => {
     const lex = new JsonLexer(str);
     const parser = new JsonParser();
-    return parser.parse(lex.lex())[0];
+    return parser.parse(lex.lex(), true)[0];
+};
+
+const jsonToString = (j: any): string => {
+    if (j.constructor.name === "Array") {
+        let array_string = "[";
+        if (!j.length) {
+            return "[]";
+        }
+        for (let a of j) {
+            if (typeof a === "string") {
+                array_string += `"${a}",`;
+            } else if (typeof a === "number") {
+                array_string += `${a},`;
+            } else if (typeof a === "boolean") {
+                array_string += a == true ? `true,` : `false,`;
+            } else if (a === null) {
+                array_string += `null,`;
+            } else if (typeof a === "object" && a !== null) {
+                // Either array or object.
+                let str_rep = jsonToString(a);
+                array_string += `${str_rep},`;
+            }
+        }
+        array_string = array_string.slice(0, array_string.length - 1);
+        array_string += "]";
+        return array_string;
+    } else if (j.constructor.name === "Object") {
+        let object_string = "{";
+        for (let key of Object.keys(j)) {
+            if (typeof j[key] === "string") {
+                object_string += `"${key}": "${j[key]}",`;
+            } else if (typeof j[key] === "number") {
+                object_string += `"${key}": ${j[key]},`;
+            } else if (typeof j[key] === "boolean") {
+                object_string += `"${key}": ${
+                    j[key] == true ? "true" : "false"
+                },`;
+            } else if (j[key] === null) {
+                object_string += `"${key}": ${j[key]},`;
+            } else if (typeof j[key] === "object" && j[key] !== null) {
+                // Either array or object.
+                let str_rep = jsonToString(j[key]);
+                object_string += `"${key}": ${str_rep},`;
+            }
+        }
+        object_string = object_string.slice(0, object_string.length - 1);
+        object_string += "}";
+        return object_string;
+    }
+    throw "Not object or array.";
 };
 
 // // Test the JsonLexer.
@@ -346,4 +396,10 @@ const toJson = (str: string) => {
 // // Parse the tokens.
 // console.log("Parsed Object: \n", parser.parse(tokens));
 
-console.log(toJson(input));
+console.log(stringToJson(input));
+
+console.log("=== Test for Json -> string");
+console.log(jsonToString([24, "vivek", false, null]));
+
+console.log(jsonToString({ a: "vivek" }));
+console.log(jsonToString(JSON.parse(input)));
